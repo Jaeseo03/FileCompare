@@ -31,6 +31,9 @@
             splitContainer1 = new SplitContainer();
             panel3 = new Panel();
             lvwLeftDir = new ListView();
+            name_left = new ColumnHeader();
+            size_left = new ColumnHeader();
+            date_left = new ColumnHeader();
             panel2 = new Panel();
             btnLeftDir = new Button();
             txtLeftDir = new TextBox();
@@ -39,17 +42,14 @@
             lblAppName = new Label();
             panel5 = new Panel();
             lvwRightDir = new ListView();
+            name_right = new ColumnHeader();
+            size_right = new ColumnHeader();
+            date_rigth = new ColumnHeader();
             panel6 = new Panel();
             btnRightDir = new Button();
             txtRightDir = new TextBox();
             panel4 = new Panel();
             btnCopyFromRight = new Button();
-            name_left = new ColumnHeader();
-            size_left = new ColumnHeader();
-            date_left = new ColumnHeader();
-            name_right = new ColumnHeader();
-            size_right = new ColumnHeader();
-            date_rigth = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -96,7 +96,7 @@
             // 
             // lvwLeftDir
             // 
-            lvwLeftDir.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            lvwLeftDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lvwLeftDir.Columns.AddRange(new ColumnHeader[] { name_left, size_left, date_left });
             lvwLeftDir.FullRowSelect = true;
             lvwLeftDir.GridLines = true;
@@ -106,6 +106,21 @@
             lvwLeftDir.TabIndex = 0;
             lvwLeftDir.UseCompatibleStateImageBehavior = false;
             lvwLeftDir.View = View.Details;
+            // 
+            // name_left
+            // 
+            name_left.Text = "이름";
+            name_left.Width = 200;
+            // 
+            // size_left
+            // 
+            size_left.Text = "크기";
+            size_left.Width = 100;
+            // 
+            // date_left
+            // 
+            date_left.Text = "수정일";
+            date_left.Width = 100;
             // 
             // panel2
             // 
@@ -120,7 +135,7 @@
             // 
             // btnLeftDir
             // 
-            btnLeftDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            btnLeftDir.Anchor = AnchorStyles.Right;
             btnLeftDir.Location = new Point(389, 19);
             btnLeftDir.Name = "btnLeftDir";
             btnLeftDir.Size = new Size(78, 29);
@@ -131,7 +146,7 @@
             // 
             // txtLeftDir
             // 
-            txtLeftDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            txtLeftDir.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtLeftDir.Location = new Point(15, 21);
             txtLeftDir.Name = "txtLeftDir";
             txtLeftDir.Size = new Size(357, 27);
@@ -182,7 +197,7 @@
             // 
             // lvwRightDir
             // 
-            lvwRightDir.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            lvwRightDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lvwRightDir.Columns.AddRange(new ColumnHeader[] { name_right, size_right, date_rigth });
             lvwRightDir.FullRowSelect = true;
             lvwRightDir.GridLines = true;
@@ -192,6 +207,21 @@
             lvwRightDir.TabIndex = 1;
             lvwRightDir.UseCompatibleStateImageBehavior = false;
             lvwRightDir.View = View.Details;
+            // 
+            // name_right
+            // 
+            name_right.Text = "이름";
+            name_right.Width = 200;
+            // 
+            // size_right
+            // 
+            size_right.Text = "크기";
+            size_right.Width = 100;
+            // 
+            // date_rigth
+            // 
+            date_rigth.Text = "수정일";
+            date_rigth.Width = 100;
             // 
             // panel6
             // 
@@ -206,7 +236,7 @@
             // 
             // btnRightDir
             // 
-            btnRightDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            btnRightDir.Anchor = AnchorStyles.Right;
             btnRightDir.Location = new Point(390, 21);
             btnRightDir.Name = "btnRightDir";
             btnRightDir.Size = new Size(78, 29);
@@ -217,7 +247,7 @@
             // 
             // txtRightDir
             // 
-            txtRightDir.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            txtRightDir.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             txtRightDir.Location = new Point(18, 21);
             txtRightDir.Name = "txtRightDir";
             txtRightDir.Size = new Size(353, 27);
@@ -243,36 +273,6 @@
             btnCopyFromRight.TabIndex = 2;
             btnCopyFromRight.Text = "<<<";
             btnCopyFromRight.UseVisualStyleBackColor = true;
-            // 
-            // name_left
-            // 
-            name_left.Text = "이름";
-            name_left.Width = 200;
-            // 
-            // size_left
-            // 
-            size_left.Text = "크기";
-            size_left.Width = 100;
-            // 
-            // date_left
-            // 
-            date_left.Text = "수정일";
-            date_left.Width = 100;
-            // 
-            // name_right
-            // 
-            name_right.Text = "이름";
-            name_right.Width = 200;
-            // 
-            // size_right
-            // 
-            size_right.Text = "크기";
-            size_right.Width = 100;
-            // 
-            // date_rigth
-            // 
-            date_rigth.Text = "수정일";
-            date_rigth.Width = 100;
             // 
             // Form1
             // 
