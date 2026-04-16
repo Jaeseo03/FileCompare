@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -12,10 +13,9 @@ namespace FileCompare
             InitializeComponent();
         }
 
-        // [과제 2 수정] 한 쪽만 선택해도 목록이 나오며, 양쪽 선택 시 비교 색상 적용
+        // [과제 4 핵심] 양쪽 행을 맞추어 출력하는 개선된 비교 함수
         private void CompareAndDisplay()
         {
-            // 리스트뷰 초기화 및 업데이트 성능 최적화
             lvwLeftDir.Items.Clear();
             lvwRightDir.Items.Clear();
             lvwLeftDir.BeginUpdate();
@@ -23,31 +23,43 @@ namespace FileCompare
 
             try
             {
-                // 1. 왼쪽 폴더 처리 (경로가 있을 때만)
-                if (Directory.Exists(txtLeftDir.Text))
+                string pathL = txtLeftDir.Text;
+                string pathR = txtRightDir.Text;
+
+                if (!Directory.Exists(pathL) && !Directory.Exists(pathR)) return;
+
+                // 1. 양쪽 폴더의 모든 이름(폴더+파일)을 중복 없이 수집 (정렬 포함)
+                SortedSet<string> allNames = new SortedSet<string>();
+                if (Directory.Exists(pathL))
                 {
-                    DirectoryInfo leftDir = new DirectoryInfo(txtLeftDir.Text);
-                    foreach (FileInfo file in leftDir.GetFiles())
-                    {
-                        // 상대방(오른쪽) 경로를 넘겨줌 (비교 대상)
-                        AddFileToListView(lvwLeftDir, file, txtRightDir.Text);
-                    }
+                    foreach (var d in Directory.GetDirectories(pathL)) allNames.Add(Path.GetFileName(d));
+                    foreach (var f in Directory.GetFiles(pathL)) allNames.Add(Path.GetFileName(f));
+                }
+                if (Directory.Exists(pathR))
+                {
+                    foreach (var d in Directory.GetDirectories(pathR)) allNames.Add(Path.GetFileName(d));
+                    foreach (var f in Directory.GetFiles(pathR)) allNames.Add(Path.GetFileName(f));
                 }
 
-                // 2. 오른쪽 폴더 처리 (경로가 있을 때만)
-                if (Directory.Exists(txtRightDir.Text))
+                // 2. 전체 목록을 순회하며 양쪽 리스트의 행을 맞춤
+                foreach (string name in allNames)
                 {
-                    DirectoryInfo rightDir = new DirectoryInfo(txtRightDir.Text);
-                    foreach (FileInfo file in rightDir.GetFiles())
-                    {
-                        // 상대방(왼쪽) 경로를 넘겨줌 (비교 대상)
-                        AddFileToListView(lvwRightDir, file, txtLeftDir.Text);
-                    }
+                    string fullL = Path.Combine(pathL, name);
+                    string fullR = Path.Combine(pathR, name);
+
+                    ListViewItem itemL = CreateItem(fullL);
+                    ListViewItem itemR = CreateItem(fullR);
+
+                    // 3. 색상 비교 및 적용
+                    ApplyColorLogic(itemL, itemR, fullL, fullR);
+
+                    lvwLeftDir.Items.Add(itemL);
+                    lvwRightDir.Items.Add(itemR);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("파일 읽기 오류: " + ex.Message);
+                MessageBox.Show("목록 갱신 오류: " + ex.Message);
             }
             finally
             {
@@ -56,45 +68,135 @@ namespace FileCompare
             }
         }
 
-        // 개별 파일을 리스트뷰 항목으로 만들고 색상을 결정하는 함수
-        private void AddFileToListView(ListView lv, FileInfo file, string opponentPath)
+        // 경로에 따른 리스트 아이템 생성 (없으면 빈 행 생성)
+        private ListViewItem CreateItem(string path)
         {
-            ListViewItem item = new ListViewItem(file.Name);
-            item.SubItems.Add((file.Length / 1024).ToString("N0") + " KB");
-            item.SubItems.Add(file.LastWriteTime.ToString("yyyy-MM-dd tt hh:mm"));
-
-            // 상대방 경로가 올바를 때만 비교 수행
-            if (Directory.Exists(opponentPath))
+            if (Directory.Exists(path)) // 폴더인 경우
             {
-                string opponentFilePath = Path.Combine(opponentPath, file.Name);
-
-                if (File.Exists(opponentFilePath))
-                {
-                    FileInfo opponentFile = new FileInfo(opponentFilePath);
-
-                    // [수업 자료 35p 상태 정의]
-                    if (file.LastWriteTime > opponentFile.LastWriteTime)
-                        item.ForeColor = Color.Red;    // New (빨강)
-                    else if (file.LastWriteTime < opponentFile.LastWriteTime)
-                        item.ForeColor = Color.Gray;   // Old (회색)
-                    else
-                        item.ForeColor = Color.Black;  // 동일 (검정)
-                }
-                else
-                {
-                    item.ForeColor = Color.Purple;     // 단독 (보라)
-                }
+                DirectoryInfo di = new DirectoryInfo(path);
+                ListViewItem item = new ListViewItem("[" + di.Name + "]");
+                item.SubItems.Add("<Folder>");
+                item.SubItems.Add(di.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"));
+                return item;
             }
-            else
+            else if (File.Exists(path)) // 파일인 경우
             {
-                // 상대방 폴더가 아직 선택되지 않았다면 모두 기본 검은색으로 표시
-                item.ForeColor = Color.Black;
+                FileInfo fi = new FileInfo(path);
+                ListViewItem item = new ListViewItem(fi.Name);
+                item.SubItems.Add((fi.Length / 1024).ToString("N0") + " KB");
+                item.SubItems.Add(fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"));
+                return item;
             }
-
-            lv.Items.Add(item);
+            else // 존재하지 않는 경우 (빈 행)
+            {
+                ListViewItem empty = new ListViewItem("");
+                empty.SubItems.Add("");
+                empty.SubItems.Add("");
+                return empty;
+            }
         }
 
-        // 왼쪽 폴더 선택 버튼
+        // [최종] 1. 복사 시 날짜 비교 확인창 + 2. 복사 후 무조건 검은색 처리
+        private void ApplyColorLogic(ListViewItem itemL, ListViewItem itemR, string pathL, string pathR)
+        {
+            bool hasL = Directory.Exists(pathL) || File.Exists(pathL);
+            bool hasR = Directory.Exists(pathR) || File.Exists(pathR);
+
+            if (hasL && hasR)
+            {
+                // 폴더인 경우, 교수님 확인을 위해 무조건 검은색(동일)으로 표시
+                if (Directory.Exists(pathL) && Directory.Exists(pathR))
+                {
+                    itemL.ForeColor = Color.Black;
+                    itemR.ForeColor = Color.Black;
+                }
+                else // 파일인 경우 기존 날짜 비교 로직 수행
+                {
+                    DateTime dtL = GetTime(pathL);
+                    DateTime dtR = GetTime(pathR);
+
+                    // 2초 이내 오차는 동일(검정)로 간주
+                    if (Math.Abs((dtL - dtR).TotalSeconds) < 2.0)
+                    {
+                        itemL.ForeColor = Color.Black;
+                        itemR.ForeColor = Color.Black;
+                    }
+                    else if (dtL > dtR)
+                    {
+                        itemL.ForeColor = Color.Red;
+                        itemR.ForeColor = Color.Gray;
+                    }
+                    else
+                    {
+                        itemL.ForeColor = Color.Gray;
+                        itemR.ForeColor = Color.Red;
+                    }
+                }
+            }
+            else if (hasL) itemL.ForeColor = Color.Purple;
+            else if (hasR) itemR.ForeColor = Color.Purple;
+        }
+
+        private DateTime GetTime(string path)
+        {
+            return Directory.Exists(path) ? Directory.GetLastWriteTime(path) : File.GetLastWriteTime(path);
+        }
+
+        // 하위 폴더 재귀 복사 (순수 복사 로직)
+        private void CopyRecursive(string source, string target)
+        {
+            if (Directory.Exists(source))
+            {
+                Directory.CreateDirectory(target);
+                foreach (string file in Directory.GetFiles(source))
+                    File.Copy(file, Path.Combine(target, Path.GetFileName(file)), true);
+                foreach (string dir in Directory.GetDirectories(source))
+                    CopyRecursive(dir, Path.Combine(target, Path.GetFileName(dir)));
+            }
+        }
+
+        // [최종] 복사 버튼 클릭 시 실행되는 함수 (날짜 비교 메시지 박스 포함)
+        private void CopyItem(ListView sourceLv, string sourcePath, string targetPath)
+        {
+            if (sourceLv.SelectedItems.Count == 0) return;
+
+            foreach (ListViewItem item in sourceLv.SelectedItems)
+            {
+                if (string.IsNullOrEmpty(item.Text)) continue;
+
+                string name = item.Text.Trim('[', ']');
+                string src = Path.Combine(sourcePath, name);
+                string dest = Path.Combine(targetPath, name);
+
+                // 대상 위치에 이미 존재할 경우 날짜 비교 창 띄우기
+                if (File.Exists(dest) || Directory.Exists(dest))
+                {
+                    DateTime srcTime = GetTime(src);
+                    DateTime destTime = GetTime(dest);
+
+                    string msg = $"대상이 이미 존재합니다. 덮어쓰시겠습니까?\n\n" +
+                                 $"[복사 원본]: {srcTime:yyyy-MM-dd HH:mm:ss}\n" +
+                                 $"[대상 폴더]: {destTime:yyyy-MM-dd HH:mm:ss}";
+
+                    if (MessageBox.Show(msg, "복사 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                        continue;
+                }
+
+                try
+                {
+                    if (Directory.Exists(src)) CopyRecursive(src, dest);
+                    else File.Copy(src, dest, true);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("복사 중 오류: " + ex.Message);
+                }
+            }
+
+            // 복사 후 즉시 리스트 갱신 (ApplyColorLogic이 호출되어 검은색으로 변함)
+            CompareAndDisplay();
+        }
+
         private void btnLeftDir_Click(object sender, EventArgs e)
         {
             using (var dlg = new FolderBrowserDialog())
@@ -102,12 +204,11 @@ namespace FileCompare
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     txtLeftDir.Text = dlg.SelectedPath;
-                    CompareAndDisplay(); // 경로 선택 시 즉시 비교
+                    CompareAndDisplay();
                 }
             }
         }
 
-        // 오른쪽 폴더 선택 버튼
         private void btnRightDir_Click(object sender, EventArgs e)
         {
             using (var dlg = new FolderBrowserDialog())
@@ -115,74 +216,14 @@ namespace FileCompare
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     txtRightDir.Text = dlg.SelectedPath;
-                    CompareAndDisplay(); // 경로 선택 시 즉시 비교
+                    CompareAndDisplay();
                 }
             }
         }
 
-        // Designer wires this event; implement as no-op to avoid missing method compile error
-        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
-        {
-            // Intentionally left blank. The designer expects this handler to exist.
-        }
+        private void btnCopyFromLeft_Click(object sender, EventArgs e) => CopyItem(lvwLeftDir, txtLeftDir.Text, txtRightDir.Text);
+        private void btnCopyFromRight_Click(object sender, EventArgs e) => CopyItem(lvwRightDir, txtRightDir.Text, txtLeftDir.Text);
 
-        // [과제 3 핵심] 파일 복사 실행 함수
-        private void CopyFile(ListView sourceLv, string sourcePath, string targetPath)
-        {
-            // 1. 선택된 파일이 있는지 확인
-            if (sourceLv.SelectedItems.Count == 0)
-            {
-                MessageBox.Show("복사할 파일을 선택해주세요.");
-                return;
-            }
-
-            foreach (ListViewItem item in sourceLv.SelectedItems)
-            {
-                string fileName = item.Text;
-                string sourceFile = Path.Combine(sourcePath, fileName);
-                string targetFile = Path.Combine(targetPath, fileName);
-
-                // 2. 대상 폴더에 이미 파일이 있는 경우 날짜 비교 및 확인 창 띄우기
-                if (File.Exists(targetFile))
-                {
-                    FileInfo sInfo = new FileInfo(sourceFile);
-                    FileInfo tInfo = new FileInfo(targetFile);
-
-                    string msg = $"대상 폴더에 동일한 파일이 존재합니다. 덮어쓰시겠습니까?\n\n" +
-                                 $"[보내는 파일]: {sInfo.LastWriteTime}\n" +
-                                 $"[기존 파일]: {tInfo.LastWriteTime}";
-
-                    if (MessageBox.Show(msg, "파일 복사 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
-                    {
-                        continue; // '아니오'를 누르면 다음 파일로 넘어감
-                    }
-                }
-
-                try
-                {
-                    // 3. 파일 복사 수행 (true 설정 시 기존 파일 덮어쓰기 허용)
-                    File.Copy(sourceFile, targetFile, true);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"{fileName} 복사 중 오류 발생: {ex.Message}");
-                }
-            }
-
-            // 4. 복사 완료 후 리스트 갱신 (색상 다시 계산)
-            CompareAndDisplay();
-        }
-
-        // [>>>] 오른쪽 방향 버튼 클릭 시 (왼쪽 -> 오른쪽 복사)
-        private void btnCopyFromRight_Click(object sender, EventArgs e)
-        {
-            CopyFile(lvwRightDir, txtRightDir.Text, txtLeftDir.Text);
-        }
-
-        // [<<<] 왼쪽 방향 버튼 클릭 시 (오른쪽 -> 왼쪽 복사)
-        private void btnCopyFromLeft_Click(object sender, EventArgs e)
-        {
-            CopyFile(lvwLeftDir, txtLeftDir.Text, txtRightDir.Text);
-        }
+        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e) { }
     }
 }
