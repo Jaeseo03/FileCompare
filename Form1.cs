@@ -125,5 +125,64 @@ namespace FileCompare
         {
             // Intentionally left blank. The designer expects this handler to exist.
         }
+
+        // [과제 3 핵심] 파일 복사 실행 함수
+        private void CopyFile(ListView sourceLv, string sourcePath, string targetPath)
+        {
+            // 1. 선택된 파일이 있는지 확인
+            if (sourceLv.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("복사할 파일을 선택해주세요.");
+                return;
+            }
+
+            foreach (ListViewItem item in sourceLv.SelectedItems)
+            {
+                string fileName = item.Text;
+                string sourceFile = Path.Combine(sourcePath, fileName);
+                string targetFile = Path.Combine(targetPath, fileName);
+
+                // 2. 대상 폴더에 이미 파일이 있는 경우 날짜 비교 및 확인 창 띄우기
+                if (File.Exists(targetFile))
+                {
+                    FileInfo sInfo = new FileInfo(sourceFile);
+                    FileInfo tInfo = new FileInfo(targetFile);
+
+                    string msg = $"대상 폴더에 동일한 파일이 존재합니다. 덮어쓰시겠습니까?\n\n" +
+                                 $"[보내는 파일]: {sInfo.LastWriteTime}\n" +
+                                 $"[기존 파일]: {tInfo.LastWriteTime}";
+
+                    if (MessageBox.Show(msg, "파일 복사 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                    {
+                        continue; // '아니오'를 누르면 다음 파일로 넘어감
+                    }
+                }
+
+                try
+                {
+                    // 3. 파일 복사 수행 (true 설정 시 기존 파일 덮어쓰기 허용)
+                    File.Copy(sourceFile, targetFile, true);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"{fileName} 복사 중 오류 발생: {ex.Message}");
+                }
+            }
+
+            // 4. 복사 완료 후 리스트 갱신 (색상 다시 계산)
+            CompareAndDisplay();
+        }
+
+        // [>>>] 오른쪽 방향 버튼 클릭 시 (왼쪽 -> 오른쪽 복사)
+        private void btnCopyFromRight_Click(object sender, EventArgs e)
+        {
+            CopyFile(lvwRightDir, txtRightDir.Text, txtLeftDir.Text);
+        }
+
+        // [<<<] 왼쪽 방향 버튼 클릭 시 (오른쪽 -> 왼쪽 복사)
+        private void btnCopyFromLeft_Click(object sender, EventArgs e)
+        {
+            CopyFile(lvwLeftDir, txtLeftDir.Text, txtRightDir.Text);
+        }
     }
 }
